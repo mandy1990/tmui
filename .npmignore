@@ -1,0 +1,7 @@
+node_modules
+.*
+/*.js
+/*.json
+!package.json
+!lerna.json
+npm-debug.log
