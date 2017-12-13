@@ -147,10 +147,10 @@ __vue_options__ = __vue_exports__ = __vue_exports__.default
 if (typeof __vue_options__ === "function") {
   __vue_options__ = __vue_options__.options
 }
-__vue_options__.__file = "D:\\github\\weex\\thmui\\packages\\personage\\index.vue"
+__vue_options__.__file = "D:\\github\\weex\\tmui\\packages\\personage\\index.vue"
 __vue_options__.render = __vue_template__.render
 __vue_options__.staticRenderFns = __vue_template__.staticRenderFns
-__vue_options__._scopeId = "data-v-66dcbf8a"
+__vue_options__._scopeId = "data-v-11ff7fe6"
 __vue_options__.style = __vue_options__.style || {}
 __vue_styles__.forEach(function (module) {
   for (var name in module) {

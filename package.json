@@ -5,7 +5,6 @@
   "main": "index.js",
   "lib": "vue",
   "type": "weex",
-  "repository": "",
   "scripts": {
     "build": "webpack --progress",
     "watch": "webpack --progress --watch",
