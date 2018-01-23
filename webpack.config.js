@@ -11,27 +11,10 @@ const glob = require('glob');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 
-const plugins = [
-  new CleanWebpackPlugin(['build'], {
-    verbose: true
-  }),
-  new webpack.DefinePlugin({
-    'process.env': {
-      NODE_ENV: JSON.stringify('production')
-    },
-    'global': '{}'
-  }),
-  new webpack.BannerPlugin({
-    banner: '// { "framework": "Vue" }\n',
-    raw: true
-  }),
-  new CopyWebpackPlugin([
-    { from: 'example/*/index.html' }
-  ])
-];
-
-const needClean = process.argv.indexOf('--watch') > -1;
-needClean && plugins.shift();
+const os = require('os');
+const HappyPack = require('happypack');
+const happyThreadPool = HappyPack.ThreadPool({ size: os.cpus().length });
+HappyPack.SERIALIZABLE_OPTIONS = HappyPack.SERIALIZABLE_OPTIONS.concat(['postcss']);
 
 console.log('Building..., Please wait a moment.');
 
@@ -47,12 +30,65 @@ const getEntry = dir => {
   return ret;
 };
 
-// const example = getEntry('example');
+const getCopyConfig = () => {
+  const foundScripts = glob.sync('example/*/', {});
+  const ret = [];
+  foundScripts.forEach(function (scriptPath) {
+    if (!/(_mods|_public)/.test(scriptPath)) {
+      ret.push({
+        from: 'example/_public/index.html',
+        to: scriptPath + 'index.html'
+      })
+    }
+  });
+  return ret;
+};
+
+const example = getEntry('example');
 const entry = Object.assign({
   'index': './index.js'
-});
+}, example);
+
+const plugins = [
+  new CleanWebpackPlugin(['build'], {
+    verbose: true
+  }),
+  new webpack.optimize.CommonsChunkPlugin({
+    async: 'shared-module',
+    minChunks: (module, count) => (
+      count >= 2
+    )
+  }),
+  new HappyPack({
+    id: 'babel',
+    verbose: true,
+    loaders: ['babel-loader?cacheDirectory=true'],
+    threadPool: happyThreadPool
+  }),
+  new HappyPack({
+    id: 'css',
+    verbose: true,
+    loaders: ['postcss-loader'],
+    threadPool: happyThreadPool
+  }),
+  new webpack.DefinePlugin({
+    'process.env': {
+      NODE_ENV: JSON.stringify('production')
+    },
+    'global': '{}'
+  }),
+  new webpack.BannerPlugin({
+    banner: '// { "framework": "Vue" }\n',
+    raw: true
+  }),
+  new CopyWebpackPlugin(getCopyConfig(), { copyUnmodified: true })
+];
+
+const needClean = process.argv.indexOf('--watch') > -1;
+needClean && plugins.shift();
 
 const getBaseConfig = () => ({
+  cache: true,
   devtool: '#source-map',
   entry,
   context: __dirname,
@@ -72,15 +108,14 @@ const getBaseConfig = () => ({
   module: {
     rules: [{
       test: /\.js$/,
-      use: {
-        loader: 'babel-loader',
-        options: {
-          cacheDirectory: true,
-        }
-      }
+      use: 'happypack/loader?id=babel',
+      exclude: /node_modules/
     }, {
       test: /\.vue(\?[^?]+)?$/,
       use: []
+    }, {
+      test: /\.css$/,
+      use: 'happypack/loader?id=css'
     }]
   },
   plugins,
@@ -98,11 +133,14 @@ webCfg.output.filename = '[name].web.js';
 webCfg.module.rules[1].use.push({
   loader: 'vue-loader',
   options: {
+    optimizeSSR: false,
+    loaders: {
+      js: 'happypack/loader?id=babel'
+    },
     compilerModules: [
       {
         postTransformNode: el => {
-          el.staticStyle = `$processStyle(${el.staticStyle})`
-          el.styleBinding = `$processStyle(${el.styleBinding})`
+          require('weex-vue-precompiler')()(el)
         }
       }
     ]

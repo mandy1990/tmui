@@ -1,5 +1,7 @@
-import TmPersonage from './packages/personage';
+import TmSelectPicker from './packages/tm-select';
+import TmSelectBox from './packages/tm-select-box';
 
 export {
-  TmPersonage
+  TmSelectPicker,
+  TmSelectBox
 };
